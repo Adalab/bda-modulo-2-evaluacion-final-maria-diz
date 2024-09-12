@@ -153,7 +153,108 @@ INNER JOIN category AS c ON fc.category_id = c.category_id
 GROUP BY c.name
 HAVING AVG(f.length) > 120;
 
-/*21. Encuentra los actores que han actuado en al menos 5 películas y muestra el nombre del actor junto con la cantidad de películas en las que han actuado.
+/*21. Encuentra los actores que han actuado en al menos 5 películas y muestra el nombre del actor junto con la cantidad de películas en las que han actuado.*/
+
+SELECT a.first_name,last_name, COUNT(fa.film_id) AS total_peliculas
+FROM actor AS a
+INNER JOIN film_actor AS fa ON a.actor_id = fa.actor_id
+GROUP BY a.first_name,last_name
+HAVING COUNT(fa.film_id) >= 5;
+
+/*22 Encuentra el título de todas las películas que fueron alquiladas por más de 5 días. 
+Utiliza una subconsulta para encontrar los rental_ids con una duración superior a 5 días y luego selecciona las películas correspondientes*/
+
+
+-- primero creo la subconsulta con la funcion datediff calculo la diferencia de las fechas.
+
+SELECT r.inventory_id
+FROM rental AS r
+WHERE DATEDIFF(r.return_date, rental_date) > 5;
+
+-- ahora necesito llegar a unir de alguna forma mi tabla renta con film que es donde tengo los titulos de las peliculas
+-- pero necesito hacer primero un inner join de film con category_film
+
+SELECT DISTINCT(f.title)
+FROM film AS f
+INNER JOIN inventory AS i ON f.film_id = i.film_id
+WHERE i.inventory_id IN (SELECT r.inventory_id
+						FROM rental AS r
+						WHERE DATEDIFF(r.return_date, rental_date) > 5)
+                        ;
+
+/*23. Encuentra el nombre y apellido de los actores que no han actuado en ninguna película de la categoría "Horror". 
+Utiliza una subconsulta para encontrar los actores que han actuado en películas de la categoría "Horror" y luego exclúyelos de la lista de actores.*/
+
+-- primero realizo la subconsulta para encontrar los actores que ha actuado en peliculas de categoria horror
+-- uso INNER JOIN y uno las 4 tablas
+
+SELECT fa.actor_id
+FROM film_actor fa
+INNER JOIN film as f ON fa.film_id = f.film_id
+INNER JOIN film_category AS fc ON f.film_id = fc.film_id
+INNER JOIN category AS c ON fc.category_id = c.category_id
+WHERE c.name = "Horror";
+
+-- en segundo lugar tengo que usar la subconsulta sobre la tabla actor excluyo con NOT IN los id que tengo en la subconsulta.
+SELECT a.first_name, a.last_name
+FROM actor AS a
+WHERE a.actor_id NOT IN (SELECT fa.actor_id
+						FROM film_actor fa
+						INNER JOIN film as f ON fa.film_id = f.film_id
+						INNER JOIN film_category AS fc ON f.film_id = fc.film_id
+						INNER JOIN category AS c ON fc.category_id = c.category_id
+						WHERE c.name = "Horror");
+                        
+
+/*24. BONUS: Encuentra el título de las películas que son comedias y tienen una duración mayor a 180 minutos en la tabla film.
+-- primero creo un CTE con las tablas category y film category que relaciona todo lo de categorias 
+   llamada peliculas comedia que me selcciona solo las peliculas que son comedia. la cte la contruyo con 2 columnas
+   
+-- segundo tengo que unir o relacionar mi cte con la tabla film que tiene el titulo y la duracion de las peliculas comedia
+    uso inner join para unir la cte con la tabla */
+
+WITH peliculas_comedias AS (SELECT fc.film_id, c.name
+							FROM category AS c
+                            INNER JOIN film_category AS fc ON c.category_id = fc.category_id
+                            WHERE c.name = "Comedy")
+SELECT f.title , pc.name, f.length
+FROM film AS f
+INNER JOIN peliculas_comedias AS pc ON f.film_id = pc.film_id
+WHERE f.length > 180;
+
+/*25. BONUS: Encuentra todos los actores que han actuado juntos en al menos una película. 
+	 La consulta debe mostrar el nombre y apellido de los actores y el número de películas en las que han actuado juntos*/
+
+
+SELECT a.actor_id, a.first_name, a.last_name, fa1.actor_id, COUNT(fa1.film_id) AS peliculas_coincidentes
+FROM actor AS a
+INNER JOIN film_actor AS fa1 ON a.actor_id = fa1.actor_id
+INNER JOIN film_actor AS fa2 ON a.actor_id = fa2.actor_id
+GROUP BY a.actor_id, a.first_name, a.last_name;
+
+
+
+
+                                
+
+
+
+
+
+                            
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
